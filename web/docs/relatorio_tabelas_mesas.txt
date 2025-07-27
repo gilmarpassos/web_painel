@@ -1,0 +1,54 @@
+=========== RELATÓRIO DE ESTRUTURA DO SISTEMA ===========
+
+📁 BANCO DE DADOS: painel.db
+
+----------------------------------------------------------
+🧾 TABELA: pedidos (alterada)
+Campos adicionados:
+- origem TEXT DEFAULT 'mesa'         # Define se é 'mesa' ou 'delivery'
+- mesa_id INTEGER                    # Referência para a mesa (tabela mesas)
+- telefone_cliente TEXT              # Número do celular do cliente (via bot)
+- status_cancelado TEXT DEFAULT 'nao' # 'nao' ou 'sim'
+
+----------------------------------------------------------
+🧾 TABELA NOVA: mesas
+Descrição: Armazena o controle de mesas físicas no estabelecimento.
+Campos:
+- id INTEGER PRIMARY KEY AUTOINCREMENT
+- codigo TEXT UNIQUE NOT NULL       # Código que o cliente digita via QR Code
+- nome TEXT                         # Nome opcional da mesa (ex: Mesa 1, VIP)
+- status TEXT DEFAULT 'livre'       # Estado da mesa (livre, ocupada, bloqueada)
+
+----------------------------------------------------------
+🧾 TABELA NOVA: movimentacao_mesa
+Descrição: Registra transferências de um pedido de uma mesa para outra.
+Campos:
+- id INTEGER PRIMARY KEY AUTOINCREMENT
+- pedido_id INTEGER                 # Pedido vinculado à troca
+- mesa_id_antiga INTEGER            # ID da mesa anterior
+- mesa_id_nova INTEGER              # ID da nova mesa
+- data_troca DATETIME               # Data/hora da troca
+
+Chaves estrangeiras:
+- pedido_id → pedidos(id)
+- mesa_id_antiga → mesas(id)
+- mesa_id_nova → mesas(id)
+
+----------------------------------------------------------
+📍 OBSERVAÇÕES E CAMINHOS
+
+- O painel continuará utilizando os blueprints existentes, com incremento futuro para:
+    /mesas → para visualização e gerenciamento das mesas
+    /relatorios → para filtro por origem (mesa ou delivery), pedidos cancelados, valores consumidos etc.
+
+- As requisições vindas do bot devem passar:
+    - código da mesa → vinculado à tabela `mesas`
+    - número de telefone → preenchido no campo `telefone_cliente`
+    - origem do pedido → 'mesa' ou 'delivery'
+
+- Relatórios por mesa poderão mostrar:
+    - Total consumido por mesa
+    - Trocas de mesa ocorridas
+    - Cancelamentos parciais (com valores cobrados do que foi consumido)
+
+==========================================================

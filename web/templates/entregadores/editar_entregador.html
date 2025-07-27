@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block titulo %}Editar Entregador{% endblock %}
+
+{% block conteudo %}
+<h3 class="mb-4">Editar Entregador</h3>
+
+<form method="POST" enctype="multipart/form-data">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label>Nome</label>
+            <input type="text" name="nome" class="form-control" value="{{ entregador['nome'] }}" required>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label>CPF</label>
+            <input type="text" name="cpf" class="form-control" value="{{ entregador['cpf'] }}" maxlength="14" required>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label>RG</label>
+            <input type="text" name="rg" class="form-control" value="{{ entregador['rg'] }}">
+        </div>
+        <div class="col-md-6 mb-3">
+            <label>Telefone</label>
+            <input type="text" name="telefone" class="form-control" value="{{ entregador['telefone'] }}" maxlength="15">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label>Placa do Veículo</label>
+            <input type="text" name="placa" class="form-control" value="{{ entregador['placa'] }}" maxlength="8">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label>CNH</label>
+            <input type="text" name="cnh" class="form-control" value="{{ entregador['cnh'] }}">
+        </div>
+        <div class="col-md-12 mb-3">
+            <label>Observações</label>
+            <textarea name="obs" class="form-control">{{ entregador['obs'] }}</textarea>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label>Foto</label>
+            <input type="file" name="foto" class="form-control">
+            <small>Deixe em branco para manter a foto atual.</small>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-success w-100">Salvar Alterações</button>
+</form>
+
+{% endblock %}

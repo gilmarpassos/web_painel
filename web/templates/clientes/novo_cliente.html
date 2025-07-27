@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block conteudo %}
+<div class="container mt-4">
+  <h3 class="mb-4">Cadastrar Novo Cliente</h3>
+
+  <!-- Mensagens flash -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <!-- Formulário -->
+  <form method="POST" id="form-cliente">
+    {% include "clientes/form_cliente_campos.html" %}
+  </form>
+
+  <!-- Script de busca por CEP -->
+  <script>
+    function buscarEnderecoPorCEP() {
+      const cep = document.querySelector('input[name="cep"]').value.replace(/\D/g, '');
+
+      if (cep.length !== 8) {
+        alert("CEP inválido.");
+        return;
+      }
+
+      fetch(`https://viacep.com.br/ws/${cep}/json/`)
+        .then(res => res.json())
+        .then(dados => {
+          if (dados.erro) {
+            alert("CEP não encontrado.");
+            return;
+          }
+
+          document.querySelector('input[name="endereco"]').value = dados.logradouro || '';
+          document.querySelector('input[name="bairro"]').value = dados.bairro || '';
+          document.querySelector('input[name="cidade"]').value = dados.localidade || '';
+          document.querySelector('input[name="estado"]').value = dados.uf || '';
+        })
+        .catch(() => {
+          alert("Erro ao buscar o CEP.");
+        });
+    }
+  </script>
+</div>
+{% endblock %}

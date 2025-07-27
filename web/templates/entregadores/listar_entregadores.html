@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block titulo %}Listar Entregadores{% endblock %}
+
+{% block conteudo %}
+<h3 class="mb-4">Lista de Entregadores</h3>
+
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th scope="col">ID</th>
+      <th scope="col">Nome</th>
+      <th scope="col">CPF</th>
+      <th scope="col">Telefone</th>
+      <th scope="col">Placa</th>
+      <th scope="col">CNH</th>
+      <th scope="col">Data de Cadastro</th>
+      <th scope="col">Ações</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for entregador in entregadores %}
+    <tr>
+      <td>{{ entregador.id }}</td>
+      <td>{{ entregador.nome }}</td>
+      <td>{{ entregador.cpf }}</td>
+      <td>{{ entregador.telefone }}</td>
+      <td>{{ entregador.placa }}</td>
+      <td>{{ entregador.cnh }}</td>
+      <td>{{ entregador.data_cadastro }}</td>
+      <td>
+        <td>
+    <a href="{{ url_for('entregadores.editar_entregador', id=entregador.id) }}" class="btn btn-warning btn-sm">Editar</a>
+    <!-- Corrigido para o nome do endpoint correto -->
+    <a href="{{ url_for('entregadores.excluir_entregador', id=entregador.id) }}" class="btn btn-danger btn-sm">Excluir</a>
+</td>
+
+      </td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="8" class="text-center">Nenhum entregador cadastrado.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<a href="{{ url_for('entregadores.cadastrar_entregador') }}" class="btn btn-primary">Cadastrar Novo Entregador</a>
+
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block titulo %}Cadastro de Entregador{% endblock %}
+{% block conteudo %}
+
+<h3 class="mb-4">Cadastrar Entregador</h3>
+<form method="POST" enctype="multipart/form-data" autocomplete="off">
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label>Nome</label>
+      <input type="text" name="nome" class="form-control" required>
+    </div>
+    <div class="col-md-3 mb-3">
+      <label>CPF</label>
+      <input type="text" name="cpf" class="form-control" maxlength="14" oninput="mascaraCPF(this)">
+    </div>
+    <div class="col-md-3 mb-3">
+      <label>RG</label>
+      <input type="text" name="rg" class="form-control">
+    </div>
+    <div class="col-md-6 mb-3">
+      <label>Telefone</label>
+      <input type="text" name="telefone" class="form-control" maxlength="15" oninput="mascaraTelefone(this)">
+    </div>
+    <div class="col-md-3 mb-3">
+      <label>Placa do Veículo</label>
+      <input type="text" name="placa" class="form-control" maxlength="8">
+    </div>
+    <div class="col-md-3 mb-3">
+      <label>CNH</label>
+      <input type="text" name="cnh" class="form-control">
+    </div>
+    <div class="col-md-12 mb-3">
+      <label>Observações</label>
+      <textarea name="obs" class="form-control"></textarea>
+    </div>
+    <div class="col-md-6 mb-3">
+      <label>Foto</label>
+      <input type="file" name="foto" class="form-control">
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-success w-100">Salvar</button>
+</form>
+
+<script>
+  function mascaraCPF(input) {
+    input.value = input.value.replace(/\D/g, '')
+                             .replace(/(\d{3})(\d)/, '$1.$2')
+                             .replace(/(\d{3})(\d)/, '$1.$2')
+                             .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  }
+
+  function mascaraTelefone(input) {
+    input.value = input.value.replace(/\D/g, '')
+                             .replace(/(\d{2})(\d)/, '($1) $2')
+                             .replace(/(\d{5})(\d)/, '$1-$2')
+                             .replace(/(-\d{4})\d+?$/, '$1');
+  }
+</script>
+
+{% endblock %}

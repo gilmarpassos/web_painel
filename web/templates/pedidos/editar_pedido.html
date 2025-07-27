@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block titulo %}Editar Pedido{% endblock %}
+{% block conteudo %}
+
+<h3 class="mb-4">Editar Pedido #{{ pedido.id }}</h3>
+
+<form method="POST" onsubmit="return prepararItens()" id="form-editar">
+  <input type="hidden" name="itens_json" id="itens_json">
+
+  <div class="mb-3">
+    <label for="status" class="form-label">Status:</label>
+    <select name="status" class="form-select">
+      <option value="pendente" {% if pedido.status == "pendente" %}selected{% endif %}>Pendente</option>
+      <option value="saiu" {% if pedido.status == "saiu" %}selected{% endif %}>Saiu para entrega</option>
+      <option value="entregue" {% if pedido.status == "entregue" %}selected{% endif %}>Entregue</option>
+    </select>
+  </div>
+
+  <hr>
+  <h5>Itens do Pedido</h5>
+
+  <div class="row mb-3">
+    <div class="col-md-6">
+      <select id="produto" class="form-select">
+        {% for p in produtos %}
+          <option value="{{ p.id }}" data-nome="{{ p.nome }}" data-preco="{{ p.preco }}">{{ p.nome }} - R$ {{ p.preco }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <input type="number" id="quantidade" class="form-control" min="1" value="1">
+    </div>
+    <div class="col-md-2">
+      <button type="button" onclick="adicionarItem()" class="btn btn-primary">Adicionar</button>
+    </div>
+  </div>
+
+  <ul id="lista-itens" class="list-group mb-3">
+    {% for item in pedido.itens %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <span>{{ item.quantidade }}x {{ item.nome }} - R$ {{ item.preco_unitario }}</span>
+        <button type="button" class="btn btn-sm btn-danger" onclick="removerItem(this)">Remover</button>
+        <input type="hidden" class="item-data" data-id="{{ item.produto_id }}" data-nome="{{ item.nome }}" data-quantidade="{{ item.quantidade }}" data-preco="{{ item.preco_unitario }}">
+      </li>
+    {% endfor %}
+  </ul>
+
+  <div class="mb-3">
+    <strong>Total do pedido: R$ <span id="total">0.00</span></strong>
+  </div>
+
+  <button type="submit" class="btn btn-success">Salvar Alterações</button>
+  <a href="{{ url_for('pedidos.listar_pedidos') }}" class="btn btn-secondary" onclick="return confirm('Deseja cancelar a edição?')">Cancelar</a>
+</form>
+
+<script>
+  function adicionarItem() {
+    const select = document.getElementById("produto");
+    const produtoId = select.value;
+    const nome = select.options[select.selectedIndex].dataset.nome;
+    const preco = parseFloat(select.options[select.selectedIndex].dataset.preco);
+    const quantidade = parseInt(document.getElementById("quantidade").value);
+
+    if (!quantidade || quantidade <= 0) return;
+
+    const ul = document.getElementById("lista-itens");
+
+    const li = document.createElement("li");
+    li.className = "list-group-item d-flex justify-content-between align-items-center";
+    li.innerHTML = `
+      <span>${quantidade}x ${nome} - R$ ${preco.toFixed(2)}</span>
+      <button type="button" class="btn btn-sm btn-danger" onclick="removerItem(this)">Remover</button>
+      <input type="hidden" class="item-data" data-id="${produtoId}" data-nome="${nome}" data-quantidade="${quantidade}" data-preco="${preco}">
+    `;
+
+    ul.appendChild(li);
+    atualizarTotal();
+  }
+
+  function removerItem(botao) {
+    botao.parentElement.remove();
+    atualizarTotal();
+  }
+
+  function atualizarTotal() {
+    let total = 0;
+    document.querySelectorAll(".item-data").forEach(el => {
+      total += parseFloat(el.dataset.preco) * parseInt(el.dataset.quantidade);
+    });
+    document.getElementById("total").innerText = total.toFixed(2);
+  }
+
+  function prepararItens() {
+    const itens = [];
+    document.querySelectorAll(".item-data").forEach(el => {
+      itens.push({
+        produto_id: el.dataset.id,
+        nome: el.dataset.nome,
+        quantidade: el.dataset.quantidade,
+        preco: el.dataset.preco
+      });
+    });
+    if (itens.length === 0) {
+      alert("Adicione ao menos 1 item ao pedido.");
+      return false;
+    }
+    document.getElementById("itens_json").value = JSON.stringify(itens);
+    return true;
+  }
+
+  document.addEventListener("DOMContentLoaded", atualizarTotal);
+</script>
+
+{% endblock %}

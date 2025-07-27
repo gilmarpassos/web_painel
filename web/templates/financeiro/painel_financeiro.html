@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block titulo %}Painel Financeiro{% endblock %}
+{% block conteudo %}
+<h3 class="mb-4">Painel Financeiro</h3>
+
+<form method="get" class="row g-3">
+  <div class="col-md-4">
+    <label>Data Início</label>
+    <input type="date" name="data_ini" class="form-control" value="{{ data_ini or '' }}">
+  </div>
+  <div class="col-md-4">
+    <label>Data Fim</label>
+    <input type="date" name="data_fim" class="form-control" value="{{ data_fim or '' }}">
+  </div>
+  <div class="col-md-4 align-self-end">
+    <button type="submit" class="btn btn-primary">Filtrar</button>
+  </div>
+</form>
+
+<hr>
+
+{% if pedidos %}
+  <div class="table-responsive mt-3">
+    <table class="table table-bordered table-hover align-middle">
+      <thead class="table-dark text-center">
+        <tr>
+          <th>ID</th>
+          <th>Cliente</th>
+          <th>Status</th>
+          <th>Data</th>
+          <th>Total (R$)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in pedidos %}
+          <tr>
+            <td class="text-center">{{ p[0] }}</td>
+            <td>{{ p[1] }}</td>
+            <td class="text-center">{{ p[2] }}</td>
+            <td>{{ p[3] }}</td>
+            <td class="text-end">R$ {{ "%.2f"|format(p[4]) }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="table-light fw-bold">
+        <tr>
+          <td colspan="4" class="text-end">Total Geral:</td>
+          <td class="text-end">R$ {{ "%.2f"|format(total_geral) }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+{% else %}
+  <p class="text-muted mt-4">Nenhum pedido encontrado para o período informado.</p>
+{% endif %}
+{% endblock %}

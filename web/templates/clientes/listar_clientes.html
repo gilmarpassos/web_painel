@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block conteudo %}
+<div class="container mt-4">
+  <h3 class="mb-4">Clientes Cadastrados</h3>
+
+  <!-- Exibir mensagens flash -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <!-- Formulário de busca -->
+  <form method="GET" action="{{ url_for('clientes.listar_clientes') }}" class="row mb-3">
+    <div class="col-md-10">
+      <input type="text" name="busca" class="form-control" placeholder="Buscar por nome ou cidade">
+    </div>
+    <div class="col-md-2">
+      <button class="btn btn-outline-primary w-100">Buscar</button>
+    </div>
+  </form>
+
+  <!-- Tabela de clientes -->
+  <table class="table table-bordered table-hover">
+    <thead class="table-dark">
+      <tr>
+        <th>Nome</th>
+        <th>Telefone</th>
+        <th>Cidade</th>
+        <th style="width: 160px;">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for cliente in clientes %}
+      <tr>
+        <td>{{ cliente['nome'] }}</td>
+        <td>{{ cliente['telefone'] }}</td>
+        <td>{{ cliente['cidade'] }}</td>
+        <td>
+          <a href="{{ url_for('clientes.editar_cliente', id=cliente['id']) }}" class="btn btn-warning btn-sm me-1">Editar</a>
+          <a href="{{ url_for('clientes.excluir_cliente', id=cliente['id']) }}" class="btn btn-danger btn-sm"
+             onclick="return confirm('Deseja excluir este cliente?')">Excluir</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="4" class="text-center">Nenhum cliente encontrado.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Botão novo cliente -->
+  <a href="{{ url_for('clientes.novo_cliente') }}" class="btn btn-success">+ Novo Cliente</a>
+</div>
+{% endblock %}

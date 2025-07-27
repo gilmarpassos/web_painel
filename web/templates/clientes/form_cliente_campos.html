@@ -1,0 +1,94 @@
+<div class="row">
+  <!-- Nome -->
+  <div class="col-md-6 mb-3">
+    <label for="nome">Nome</label>
+    <input type="text" id="nome" name="nome" class="form-control"
+           value="{{ cliente['nome'] if cliente else '' }}" required>
+  </div>
+
+  <!-- Telefone -->
+  <div class="col-md-3 mb-3">
+    <label for="telefone">Telefone</label>
+    <input type="text" id="telefone" name="telefone" class="form-control"
+           value="{{ cliente['telefone'] if cliente else '' }}">
+  </div>
+
+  <!-- CPF -->
+  <div class="col-md-3 mb-3">
+    <label for="cpf">CPF</label>
+    <input type="text" id="cpf" name="cpf" class="form-control"
+           value="{{ cliente['cpf'] if cliente else '' }}"
+           onblur="verificarCPF()" {% if cliente and cliente['cpf'] %}readonly{% endif %}>
+    <small id="aviso-cpf" class="text-danger"></small>
+  </div>
+
+  <!-- RG -->
+  <div class="col-md-3 mb-3">
+    <label for="rg">RG</label>
+    <input type="text" id="rg" name="rg" class="form-control"
+           value="{{ cliente['rg'] if cliente else '' }}">
+  </div>
+
+  <!-- CEP -->
+  <div class="col-md-3 mb-3">
+    <label for="cep">CEP</label>
+    <input type="text" id="cep" name="cep" class="form-control"
+           value="{{ cliente['cep'] if cliente else '' }}"
+           onblur="buscarEnderecoPorCEP()">
+  </div>
+
+  <!-- Endereço -->
+  <div class="col-md-6 mb-3">
+    <label for="endereco">Endereço</label>
+    <input type="text" id="endereco" name="endereco" class="form-control"
+           value="{{ cliente['endereco'] if cliente else '' }}" required>
+  </div>
+
+  <!-- Número -->
+  <div class="col-md-4 mb-3">
+    <label for="numero">Número</label>
+    <input type="text" id="numero" name="numero" class="form-control"
+           value="{{ cliente['numero'] if cliente else '' }}">
+  </div>
+
+  <!-- Bairro -->
+  <div class="col-md-4 mb-3">
+    <label for="bairro">Bairro</label>
+    <input type="text" id="bairro" name="bairro" class="form-control"
+           value="{{ cliente['bairro'] if cliente else '' }}">
+  </div>
+
+  <!-- Cidade -->
+  <div class="col-md-4 mb-3">
+    <label for="cidade">Cidade</label>
+    <input type="text" id="cidade" name="cidade" class="form-control"
+           value="{{ cliente['cidade'] if cliente else '' }}">
+  </div>
+
+  <!-- Estado -->
+  <div class="col-md-4 mb-3">
+    <label for="estado">Estado</label>
+    <input type="text" id="estado" name="estado" class="form-control"
+           value="{{ cliente['estado'] if cliente else '' }}">
+  </div>
+
+  <!-- Referência -->
+  <div class="col-md-6 mb-3">
+    <label for="referencia">Referência</label>
+    <input type="text" id="referencia" name="referencia" class="form-control"
+           value="{{ cliente['referencia'] if cliente else '' }}">
+  </div>
+
+  <!-- Outros -->
+  <div class="col-md-6 mb-3">
+    <label for="outros">Outros</label>
+    <input type="text" id="outros" name="outros" class="form-control"
+           value="{{ cliente['outros'] if cliente else '' }}">
+  </div>
+</div>
+
+<!-- Botões -->
+<div class="d-flex justify-content-between">
+  <button type="submit" class="btn btn-success">Salvar</button>
+  <a href="{{ url_for('clientes.listar_clientes') }}" class="btn btn-secondary">Cancelar</a>
+</div>

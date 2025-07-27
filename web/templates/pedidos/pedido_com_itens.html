@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>{% if editar %}Editar Pedido{% else %}Novo Pedido{% endif %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="container mt-4">
+
+  {% with mensagens = get_flashed_messages(with_categories=true) %}
+    {% if mensagens %}
+      {% for categoria, msg in mensagens %}
+        {% if categoria == "pedido" %}
+          <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ msg }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <h3 class="mb-4">{% if editar %}Editar Pedido{% else %}Novo Pedido{% endif %}</h3>
+  <form method="POST">
+    {% if editar %}
+      <input type="hidden" name="editar" value="1">
+    {% endif %}
+
+    <div class="mb-3">
+      <label>Cliente:</label>
+      <select name="cliente_id" class="form-select" {% if editar %}disabled{% endif %}>
+        {% for c in clientes %}
+          <option value="{{c[0]}}" {% if editar and c[0] == cliente_id %}selected{% endif %}>{{c[1]}}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label>Status:</label>
+      <select name="status" class="form-select">
+        <option value="pendente" {% if status == "pendente" %}selected{% endif %}>Pendente</option>
+        <option value="saiu" {% if status == "saiu" %}selected{% endif %}>Saiu para entrega</option>
+        <option value="cancelado" {% if status == "cancelado" %}selected{% endif %}>Cancelado</option>
+        <option value="entregue" {% if status == "entregue" %}selected{% endif %}>Entregue</option>
+      </select>
+    </div>
+
+    <h5 class="mt-4">Itens do Pedido</h5>
+    <table class="table table-bordered" id="tabela-itens">
+      <thead class="table-secondary text-center">
+        <tr>
+          <th>Produto</th>
+          <th>Quantidade</th>
+          <th>Preço Unitário</th>
+          <th>Total</th>
+          <th>Remover</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <button type="button" class="btn btn-outline-primary" onclick="adicionarItem()">+ Adicionar Item</button>
+
+    <div class="mt-4">
+      <strong>Valor Total: R$ <span id="valorTotal">0.00</span></strong>
+    </div>
+
+    <input type="hidden" name="itens_json" id="itens_json">
+    <button class="btn btn-success mt-3 w-100">Salvar Pedido</button>
+  </form>
+
+  <script>
+    const produtosDB = [
+      {% for p in produtos %}
+        { id: {{p[0]}}, nome: "{{p[1]}}", preco: {{p[2]}} },
+      {% endfor %}
+    ];
+
+    const itensPreCarregados = {{ itens | safe if editar else '[]' }};
+
+    function adicionarItem(produto_id = "", quantidade = 1, preco = 0) {
+      const tbody = document.querySelector("#tabela-itens tbody");
+      const row = document.createElement("tr");
+
+      let options = produtosDB.map(p =>
+        `<option value="${p.id}" data-preco="${p.preco}" ${p.id == produto_id ? "selected" : ""}>${p.nome}</option>`
+      ).join("");
+
+      row.innerHTML = `
+        <td>
+          <select class="form-select produto">${options}</select>
+        </td>
+        <td><input type="number" class="form-control quantidade" value="${quantidade}" min="1"></td>
+        <td class="preco text-center">0.00</td>
+        <td class="total text-center">0.00</td>
+        <td class="text-center"><button type="button" class="btn btn-sm btn-danger" onclick="removerItem(this)">X</button></td>
+      `;
+
+      tbody.appendChild(row);
+      atualizarEventos(row);
+      calcularTotais();
+
+      const select = row.querySelector(".produto");
+      let precoUnitario = preco || parseFloat(select.selectedOptions[0].dataset.preco) || 0;
+      row.querySelector(".preco").textContent = precoUnitario.toFixed(2);
+    }
+
+    function removerItem(botao) {
+      botao.closest("tr").remove();
+      calcularTotais();
+    }
+
+    function atualizarEventos(row) {
+      const produtoSelect = row.querySelector(".produto");
+      const quantidadeInput = row.querySelector(".quantidade");
+
+      quantidadeInput.addEventListener("input", calcularTotais);
+
+      produtoSelect.addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          quantidadeInput.focus();
+        }
+      });
+
+      produtoSelect.addEventListener("change", function() {
+        const preco = parseFloat(produtoSelect.selectedOptions[0].dataset.preco) || 0;
+        row.querySelector(".preco").textContent = preco.toFixed(2);
+        calcularTotais();
+      });
+    }
+
+    function calcularTotais() {
+      let totalGeral = 0;
+      const itens = [];
+
+      document.querySelectorAll("#tabela-itens tbody tr").forEach(row => {
+        const select = row.querySelector(".produto");
+        const quantidade = parseInt(row.querySelector(".quantidade").value) || 0;
+        const preco = parseFloat(row.querySelector(".preco").textContent) || 0;
+        const produtoNome = select.selectedOptions[0].textContent;
+        const produtoId = select.value;
+
+        const total = quantidade * preco;
+
+        row.querySelector(".preco").textContent = preco.toFixed(2);
+        row.querySelector(".total").textContent = total.toFixed(2);
+        totalGeral += total;
+
+        itens.push({ produto_id: produtoId, nome: produtoNome, quantidade, preco });
+      });
+
+      document.getElementById("valorTotal").textContent = totalGeral.toFixed(2);
+      document.getElementById("itens_json").value = JSON.stringify(itens);
+    }
+
+    // Pré-carregar itens se estiver em modo edição
+    if (itensPreCarregados.length > 0) {
+      itensPreCarregados.forEach(i => {
+        adicionarItem(i.produto_id, i.quantidade, i.preco);
+      });
+    }
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

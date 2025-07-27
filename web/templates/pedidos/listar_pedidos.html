@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block titulo %}Pedidos Realizados{% endblock %}
+{% block conteudo %}
+
+<a href="{{ url_for('pedidos.pedidos') }}" class="btn btn-success mb-3">+ Novo Pedido</a>
+
+<style>
+  .vencido { background-color: #ffcccc !important; }
+  .bg-saiu { background-color: #d1ecf1 !important; }
+  .bg-pendente { background-color: #fff3cd !important; }
+  .bg-entregue { background-color: #d4edda !important; }
+  .contagem { font-weight: bold; color: #000; }
+</style>
+
+<h3 class="mb-4">Pedidos Realizados</h3>
+
+{% for p in pedidos %}
+  {% set classe_status = "bg-pendente" if p.status == "pendente" else "bg-entregue" if p.status == "entregue" else "bg-saiu" %}
+  <div class="card mb-3 {{ classe_status }}" id="pedido-{{ p.id }}">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <strong>Pedido #{{ p.id }}</strong>
+      <div class="d-flex align-items-center">
+        <span class="badge bg-info text-dark me-2" id="badge-status-{{ p.id }}">{{ p.status }}</span>
+        <form class="form-status d-flex align-items-center m-0" data-id="{{ p.id }}">
+          <select name="status" class="form-select form-select-sm">
+            {% for opcao in ['pendente', 'saiu', 'entregue'] %}
+              <option value="{{ opcao }}" {% if p.status == opcao %}selected{% endif %}>{{ opcao }}</option>
+            {% endfor %}
+          </select>
+        </form>
+      </div>
+    </div>
+    <div class="card-body">
+      <p><strong>Cliente:</strong> {{ p.cliente }}</p>
+      <p><strong>Data:</strong> {{ p.data }}</p>
+      <p><strong>Itens:</strong></p>
+      <ul>
+        {% for item in p.itens %}
+          <li>{{ item[1] }}x {{ item[0] }} - R$ {{ item[2]|round(2) }}</li>
+        {% endfor %}
+      </ul>
+
+      {% if p.status == "saiu" and p.hora_saida %}
+        <p><span class="text-danger">⏱️ Tempo de entrega:
+          <span class="contagem" data-hora="{{ p.hora_saida }}" id="tempo-{{ p.id }}">Calculando...</span></span>
+        </p>
+      {% endif %}
+
+      {% if p.hora_saida %}<p><strong>Hora de saída:</strong> {{ p.hora_saida }}</p>{% endif %}
+      {% if p.hora_entrega %}<p><strong>Hora de entrega:</strong> {{ p.hora_entrega }}</p>{% endif %}
+
+      <div class="mt-2">
+        <a href="{{ url_for('pedidos.editar_pedido', id=p.id) }}" class="btn btn-sm btn-outline-primary">Editar</a>
+        <a href="{{ url_for('pedidos.excluir_pedido', id=p.id) }}" class="btn btn-sm btn-outline-danger"
+           onclick="return confirm('Tem certeza que deseja excluir este pedido?')">Excluir</a>
+      </div>
+    </div>
+  </div>
+{% else %}
+  <div class="alert alert-warning">Nenhum pedido encontrado.</div>
+{% endfor %}
+
+<script>
+  function formatarTempo(ms) {
+    const min = Math.floor(ms / 60000);
+    const seg = Math.floor((ms % 60000) / 1000);
+    return `${String(min).padStart(2, '0')}:${String(seg).padStart(2, '0')}`;
+  }
+
+  function atualizarTimers() {
+    document.querySelectorAll(".contagem").forEach(el => {
+      const dataPedido = new Date(el.dataset.hora);
+      const agora = new Date();
+      const diff = agora - dataPedido;
+      el.textContent = formatarTempo(diff);
+
+      const minutos = Math.floor(diff / 60000);
+      const card = el.closest(".card");
+      if (minutos >= 30) card.classList.add("vencido");
+    });
+  }
+
+  setInterval(atualizarTimers, 1000);
+  atualizarTimers();
+
+  document.querySelectorAll(".form-status").forEach(form => {
+    const select = form.querySelector("select");
+    select.addEventListener("change", () => {
+      const id = form.dataset.id;
+      const status = select.value;
+
+      fetch(`/pedidos/status/${id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: new URLSearchParams({ status })
+      })
+      .then(res => {
+        if (!res.ok) throw new Error("Erro ao atualizar o status");
+
+        const badge = document.getElementById("badge-status-" + id);
+        const card = form.closest(".card");
+
+        if (badge) badge.textContent = status;
+        card.classList.remove("bg-pendente", "bg-saiu", "bg-entregue", "vencido");
+
+        if (status === "pendente") card.classList.add("bg-pendente");
+        else if (status === "saiu") card.classList.add("bg-saiu");
+        else if (status === "entregue") {
+          card.classList.add("bg-entregue");
+
+          // Parar timer
+          const tempo = document.getElementById("tempo-" + id);
+          if (tempo) {
+            tempo.removeAttribute("data-hora");
+            tempo.textContent = "Entregue";
+          }
+        }
+
+        if (status === "saiu") {
+          location.reload();
+        }
+      })
+      .catch(err => alert("Erro ao atualizar: " + err.message));
+    });
+  });
+</script>
+{% endblock %}

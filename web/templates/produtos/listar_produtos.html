@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="container mt-4">
+  <h3 class="mb-4">Produtos Cadastrados</h3>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <a href="{{ url_for('produtos.cadastro_produto') }}" class="btn btn-success mb-3">+ Novo Produto</a>
+
+  <table class="table table-bordered table-hover">
+    <thead class="table-dark">
+      <tr>
+        <th>Nome</th>
+        <th>Descrição</th>
+        <th>Valor</th>
+        <th>Estoque</th>
+        <th style="width: 160px;">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for produto in produtos %}
+      <tr>
+        <td>{{ produto['nome'] }}</td>
+        <td>{{ produto['descricao'] }}</td>
+        <td>R$ {{ "%.2f"|format(produto['valor']) }}</td>
+        <td>{{ produto['estoque'] }}</td>
+        <td>
+          <a href="{{ url_for('produtos.editar_produto', id=produto['id']) }}" class="btn btn-warning btn-sm">Editar</a>
+          <a href="{{ url_for('produtos.excluir_produto', id=produto['id']) }}" class="btn btn-danger btn-sm"
+             onclick="return confirm('Deseja realmente excluir este produto?')">Excluir</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="5" class="text-center">Nenhum produto cadastrado.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
