@@ -91,7 +91,7 @@ def cadastrar_entregador():
         flash("Entregador cadastrado com sucesso!", "success")
         return redirect(url_for("entregadores.cadastrar_entregador"))
 
-    return render_template("cadastrar_entregador.html")
+    return render_template("entregadores/cadastrar_entregador.html")
 
 # ----------- Listagem de entregadores ----------- 
 @bp_entregadores.route("/entregadores/listar", methods=["GET"])
@@ -104,7 +104,7 @@ def listar_entregadores():
     cur.execute("SELECT * FROM entregadores ORDER BY data_cadastro DESC")
     entregadores = cur.fetchall()  # Agora isso vai retornar uma lista de objetos Row
     con.close()
-    return render_template("listar_entregadores.html", entregadores=entregadores)
+    return render_template("entregadores/listar_entregadores.html", entregadores=entregadores)
 
 # ----------- Edição de entregador ----------- 
 # ----------- Edição de entregador ----------- 
@@ -156,7 +156,7 @@ def editar_entregador(id):
         con.close()
 
         flash("Entregador atualizado com sucesso!", "success")
-        return redirect(url_for('entregadores/entregadores.listar_entregadores'))
+        return redirect(url_for('entregadores.listar_entregadores'))
 
     con.close()
     

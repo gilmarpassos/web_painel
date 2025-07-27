@@ -12,7 +12,12 @@
 {% if session.get("usuario") %}
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-4">
   <a class="navbar-brand" href="{{ url_for('inicio.menu') }}">Painel Web</a>
-  <div class="collapse navbar-collapse">
+  <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+    aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegação">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="navbarNav">
     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
       <li class="nav-item"><a class="nav-link" href="{{ url_for('clientes.listar_clientes') }}">Clientes</a></li>
       <li class="nav-item"><a class="nav-link" href="{{ url_for('produtos.listar_produtos') }}">Produtos</a></li>
@@ -23,10 +28,11 @@
       {% endif %}
       <li class="nav-item"><a class="nav-link" href="{{ url_for('configuracoes.configuracoes') }}">Configurações</a></li>
     </ul>
-  </div>
-  <div class="ms-auto text-white">
-    Bem-vindo, <strong>{{ session.get('usuario_nome', 'Usuário') }}</strong> &nbsp;
-    <a href="{{ url_for('usuarios.logout') }}" class="btn btn-sm btn-outline-light">Sair</a>
+
+    <div class="ms-auto text-white">
+      Bem-vindo, <strong>{{ session.get('usuario_nome', 'Usuário') }}</strong> &nbsp;
+      <a href="{{ url_for('usuarios.logout') }}" class="btn btn-sm btn-outline-light">Sair</a>
+    </div>
   </div>
 </nav>
 {% endif %}

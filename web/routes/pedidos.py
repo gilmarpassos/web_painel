@@ -136,71 +136,39 @@ def editar_pedido(id):
     con = get_conexao()
     cur = con.cursor()
 
-    # Carrega pedido e cliente
-    cur.execute("""
-        SELECT p.id, p.cliente_id, c.nome, p.status, p.data
-        FROM pedidos p
-        JOIN clientes c ON p.cliente_id = c.id
-        WHERE p.id = ?
-    """, (id,))
-    pedido = cur.fetchone()
-    if not pedido:
-        con.close()
-        flash("Pedido não encontrado!", "danger")
-        return redirect(url_for("pedidos.listar_pedidos"))
-
-    # Carrega itens
-    cur.execute("""
-        SELECT ip.produto_id, pr.nome, ip.quantidade, ip.preco_unitario
-        FROM itens_pedido ip
-        JOIN produtos pr ON pr.id = ip.produto_id
-        WHERE ip.pedido_id = ?
-    """, (id,))
-    itens = cur.fetchall()
-
-    # Carrega lista de produtos para formulário
-    cur.execute("SELECT id, nome, preco FROM produtos ORDER BY nome")
-    produtos = cur.fetchall()
-
     if request.method == "POST":
-        novo_status = request.form.get("status")
-        itens_json = request.form.get("itens_json")
+        cliente_id = request.form.get("cliente_id")
+        status = request.form.get("status")
+        itens = request.form.get("itens")
 
-        try:
-            novos_itens = json.loads(itens_json)
-        except:
-            flash("Erro ao ler os itens atualizados!", "danger")
-            return redirect(url_for("pedidos.editar_pedido", id=id))
+        # Definir cor baseada no status
+        cor = "amarelo" if status == "pendente" else "azul" if status == "saiu" else "verde"
 
-        if not novos_itens:
-            flash("Adicione ao menos um item!", "danger")
-            return redirect(url_for("pedidos.editar_pedido", id=id))
+        hora_entrega = None
+        if status == "entregue":
+            from datetime import datetime
+            hora_entrega = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # Atualiza status
-        cur.execute("UPDATE pedidos SET status=? WHERE id=?", (novo_status, id))
-
-        # Remove itens antigos
-        cur.execute("DELETE FROM itens_pedido WHERE pedido_id=?", (id,))
-        for item in novos_itens:
+        if hora_entrega:
             cur.execute("""
-                INSERT INTO itens_pedido (pedido_id, produto_id, quantidade, preco_unitario)
-                VALUES (?, ?, ?, ?)
-            """, (id, item["produto_id"], item["quantidade"], item["preco"]))
+                UPDATE pedidos SET cliente_id=?, status=?, itens=?, cor=?, hora_entrega=?
+                WHERE id=?
+            """, (cliente_id, status, itens, cor, hora_entrega, id))
+        else:
+            cur.execute("""
+                UPDATE pedidos SET cliente_id=?, status=?, itens=?, cor=?
+                WHERE id=?
+            """, (cliente_id, status, itens, cor, id))
 
         con.commit()
         con.close()
-        flash("Pedido atualizado com sucesso!", "success")
+        flash("Pedido atualizado com sucesso!", "pedido")
         return redirect(url_for("pedidos.listar_pedidos"))
 
+    cur.execute("SELECT * FROM pedidos WHERE id=?", (id,))
+    pedido = cur.fetchone()
     con.close()
-    return render_template("pedidos/editar_pedido.html", pedido={
-        "id": pedido["id"],
-        "cliente_id": pedido["cliente_id"],
-        "cliente": pedido["nome"],
-        "status": pedido["status"],
-        "data": pedido["data"],
-        "itens": itens
-    }, produtos=produtos)
+    return render_template("pedidos/editar_pedido.html", pedido=pedido)
 
 # ATUALIZAR STATUS (AJAX)
 @bp_pedidos.route("/pedidos/status/<int:id>", methods=["POST"])

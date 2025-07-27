@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="container mt-4">
+  <h3>Configurações do Sistema</h3>
+  <form method="POST">
+    <div class="mb-3">
+      <label class="form-label">Nome da Empresa</label>
+      <input type="text" class="form-control" name="nome_empresa" value="{{ config['nome_empresa'] or '' }}">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Telefone</label>
+      <input type="text" class="form-control" name="telefone" value="{{ config['telefone'] or '' }}">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Email</label>
+      <input type="email" class="form-control" name="email" value="{{ config['email'] or '' }}">
+    </div>
+    <button type="submit" class="btn btn-success">Salvar Configurações</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,71 @@
+3 criar a parte de configurações onde mudaremos os estilos do sistema, com algumas opções, tambem vamos controlar o tempo de entrega,dentre outras opções futuras
+4 na tela de login deve haver uma tela pra editar o admin ou se ele esquecer a senha, porem temos que fazer confirmação por whatapp ou email na hora de editar pra que ninguem entre no sistema sem autorização, os usuarios tambem serão cadastrados mas não poderão efetuar funçoes como excluir , finançeiro, e algo importante.segue abaixo o moduto atual:
+{% extends "base.html" %}
+
+{% block titulo %}Login{% endblock %}
+
+{% block conteudo %}
+<div class="row justify-content-center">
+  <div class="col-md-4">
+    <h3 class="text-center mb-4">Login do Sistema</h3>
+    <form method="POST" autocomplete="off">
+      <div class="mb-3">
+        <label for="login" class="form-label">Login</label>
+        <input type="text" class="form-control" name="login" required autofocus>
+      </div>
+      <div class="mb-3">
+        <label for="senha" class="form-label">Senha</label>
+        <input type="password" class="form-control" name="senha" required>
+      </div>
+      <button type="submit" class="btn btn-primary w-100">Entrar</button>
+      <p class="mt-3 text-center">Primeiro acesso? <a href="{{ url_for('usuarios.cadastro_usuario') }}">Cadastre-se aqui</a></p>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+
+5 criar ou adaptar o modulo financeiro(segue abaixo o atual):
+from flask import Blueprint, render_template, request, redirect, session, flash
+import sqlite3
+from datetime import datetime
+
+bp_financeiro = Blueprint("financeiro", __name__)
+
+def get_conexao():
+    return sqlite3.connect(DB)
+
+@bp_financeiro.route("/financeiro", methods=["GET", "POST"])
+    if "usuario" not in session or session["usuario"]["perfil"] != "admin":
+        flash("Acesso restrito ao administrador.", "danger")
+        return redirect("/")
+
+    conn = get_conexao()
+    cur = conn.cursor()
+
+    filtro_data_ini = request.args.get("data_ini")
+    filtro_data_fim = request.args.get("data_fim")
+
+    query = """
+        SELECT p.id, c.nome, p.status, p.data, 
+               SUM(i.quantidade * i.preco_unitario) AS total
+        FROM pedidos p
+        JOIN clientes c ON p.cliente_id = c.id
+        JOIN itens_pedido i ON i.pedido_id = p.id
+    """
+    params = []
+
+    if filtro_data_ini and filtro_data_fim:
+        query += " WHERE date(p.data) BETWEEN ? AND ?"
+        params.extend([filtro_data_ini, filtro_data_fim])
+
+    query += " GROUP BY p.id ORDER BY p.data DESC"
+    cur.execute(query, params)
+    pedidos = cur.fetchall()
+
+    total_geral = sum([p[4] for p in pedidos])
+    conn.close()
+
+                           data_ini=filtro_data_ini, data_fim=filtro_data_fim)
+7 mudar os módulos com ajax pra não ficar atualizando a tela toda hora, as mensagens de confirmação devem aparecer em popups
+8 em novo pedido o campo de produtos deve vir por padrão em branco, já esta vindo com o primeiro item nele, isso pode gerar inserção de itens indesejados, deve 

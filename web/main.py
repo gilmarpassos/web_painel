@@ -21,6 +21,7 @@ app.register_blueprint(bp_configuracoes)
 app.register_blueprint(bp_financeiro)
 app.register_blueprint(bp_inicio)
 
+
 # Rota inicial: redireciona para login ou menu
 @app.route("/")
 def inicio():

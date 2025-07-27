@@ -1,23 +1,22 @@
 {% extends "base.html" %}
 {% block titulo %}Menu Principal{% endblock %}
+
 {% block conteudo %}
-  <div class="collapse navbar-collapse">
-    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-      <li class="nav-item"><a class="nav-link" href="{{ url_for('clientes.listar_clientes') }}">Clientes</a></li>
-      <li class="nav-item"><a class="nav-link" href="{{ url_for('produtos.listar_produtos') }}">Produtos</a></li>
-      <li class="nav-item"><a class="nav-link" href="{{ url_for('pedidos.listar_pedidos') }}">Pedidos</a></li>
-      <li class="nav-item"><a class="nav-link" href="{{ url_for('entregadores.cadastrar_entregador') }}">Cadastrar Entregador</a></li>
-      <li class="nav-item"><a class="nav-link" href="{{ url_for('entregadores.listar_entregadores') }}">Listar Entregadores</a></li>
-      {% if session.get('perfil') == 'admin' %}
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('financeiro.financeiro') }}">Financeiro</a></li>
-      {% endif %}
-      <li class="nav-item"><a class="nav-link" href="{{ url_for('configuracoes.configuracoes') }}">Configurações</a></li>
-    </ul>
-  </div>
+<div class="collapse navbar-collapse">
+  <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+    <li class="nav-item"><a class="nav-link" href="{{ url_for('clientes.listar_clientes') }}">Clientes</a></li>
+    <li class="nav-item"><a class="nav-link" href="{{ url_for('produtos.listar_produtos') }}">Produtos</a></li>
+    <li class="nav-item"><a class="nav-link" href="{{ url_for('pedidos.listar_pedidos') }}">Pedidos</a></li>
+    <li class="nav-item"><a class="nav-link" href="{{ url_for('entregadores.cadastrar_entregador') }}">Cadastrar Entregador</a></li>
+    <li class="nav-item"><a class="nav-link" href="{{ url_for('entregadores.listar_entregadores') }}">Listar Entregadores</a></li>
+    {% if session.get('perfil') == 'admin' %}
+      <li class="nav-item"><a class="nav-link" href="{{ url_for('financeiro.financeiro') }}">Financeiro</a></li>
+    {% endif %}
+    <li class="nav-item"><a class="nav-link btn btn-primary text-white" href="{{ url_for('configuracoes.configuracoes') }}">Abrir Configurações</a></li>
+  </ul>
   <div class="ms-auto text-white">
     Bem-vindo, <strong>{{ session.get('usuario_nome', 'Usuário') }}</strong> &nbsp;
     <a href="{{ url_for('usuarios.logout') }}" class="btn btn-sm btn-outline-light">Sair</a>
   </div>
-</nav>
+</div>
 {% endblock %}
-
