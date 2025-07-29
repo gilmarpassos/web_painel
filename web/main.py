@@ -31,3 +31,21 @@ def inicio():
 
 if __name__ == "__main__":
     app.run(debug=True)
+import sqlite3
+
+def get_config():
+    try:
+        con = sqlite3.connect("painel.db")
+        con.row_factory = sqlite3.Row
+        cur = con.cursor()
+        cur.execute("SELECT * FROM configuracoes LIMIT 1")
+        config = cur.fetchone()
+        con.close()
+        return config
+    except:
+        return {}
+
+@app.context_processor
+def inject_config():
+    config = get_config()
+    return dict(config=config)

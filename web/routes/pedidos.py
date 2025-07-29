@@ -24,45 +24,51 @@ def pedidos():
         cliente_id = request.form.get("cliente_id")
         status = request.form.get("status", "pendente")
         itens_json = request.form.get("itens_json")
+        mesa_id = request.form.get("mesa_id")
 
-        if not cliente_id or not itens_json:
-            flash("Preencha todos os dados corretamente!", "pedido")
+        if not cliente_id or not itens_json or not mesa_id:
+            flash("Preencha todos os dados corretamente!", "danger")
             return redirect(url_for("pedidos.pedidos"))
 
         try:
             itens = json.loads(itens_json)
         except Exception:
-            flash("Erro ao ler os itens do pedido!", "pedido")
-            return redirect(url_for("pedidos.pedidos"))
-
-        if not itens:
-            flash("Adicione pelo menos um item ao pedido!", "pedido")
+            flash("Erro ao processar os itens!", "danger")
             return redirect(url_for("pedidos.pedidos"))
 
         data = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        cur.execute("INSERT INTO pedidos (cliente_id, status, data) VALUES (?, ?, ?)", (cliente_id, status, data))
+        cur.execute(
+            "INSERT INTO pedidos (cliente_id, status, data, mesa_id) VALUES (?, ?, ?, ?)",
+            (cliente_id, status, data, mesa_id)
+        )
         pedido_id = cur.lastrowid
 
         for item in itens:
-            cur.execute("""
-                INSERT INTO itens_pedido (pedido_id, produto_id, quantidade, preco_unitario)
-                VALUES (?, ?, ?, ?)
-            """, (pedido_id, item["produto_id"], item["quantidade"], item["preco"]))
+            cur.execute(
+                "INSERT INTO itens_pedido (pedido_id, produto_id, quantidade, preco_unitario) VALUES (?, ?, ?, ?)",
+                (pedido_id, item["produto_id"], item["quantidade"], item["valor"])
+            )
 
         con.commit()
-        flash("Pedido salvo com sucesso!", "pedido")
+        con.close()
+
+        flash("Pedido salvo com sucesso!", "success")
         return redirect(url_for("pedidos.listar_pedidos"))
 
-    cur.execute("SELECT id, nome FROM clientes ORDER BY nome")
+    # GET
+    cur.execute("SELECT * FROM clientes ORDER BY nome")
     clientes = cur.fetchall()
 
-    cur.execute("SELECT id, nome, preco FROM produtos ORDER BY nome")
+    cur.execute("SELECT * FROM produtos ORDER BY nome")
     produtos = cur.fetchall()
 
-    con.close()
-    return render_template("pedidos/novo_pedido.html", clientes=clientes, produtos=produtos)
+    cur.execute("SELECT * FROM mesas ORDER BY nome")
+    mesas = cur.fetchall()
 
-# LISTAGEM DE PEDIDOS
+    con.close()
+    return render_template("pedidos/novo_pedido.html", clientes=clientes, produtos=produtos, mesas=mesas)
+
+# LISTAR PEDIDOS
 @bp_pedidos.route("/pedidos/listar")
 def listar_pedidos():
     if "usuario" not in session:
@@ -71,45 +77,149 @@ def listar_pedidos():
     con = get_conexao()
     cur = con.cursor()
 
-    filtro_status = request.args.get("status")
-    if filtro_status:
-        cur.execute("""
-            SELECT p.id, c.nome, p.status, p.data, p.hora_saida, p.hora_entrega
-            FROM pedidos p
-            JOIN clientes c ON p.cliente_id = c.id
-            WHERE p.status = ?
-            ORDER BY p.data DESC
-        """, (filtro_status,))
-    else:
-        cur.execute("""
-            SELECT p.id, c.nome, p.status, p.data, p.hora_saida, p.hora_entrega
-            FROM pedidos p
-            JOIN clientes c ON p.cliente_id = c.id
-            ORDER BY p.data DESC
-        """)
-
+    cur.execute(
+    """
+    SELECT p.*, c.nome AS nome_cliente, m.numero AS numero_mesa
+    FROM pedidos p
+    LEFT JOIN clientes c ON p.cliente_id = c.id
+    LEFT JOIN mesas m ON p.mesa_id = m.id
+    ORDER BY p.data DESC
+    """
+)
     pedidos = cur.fetchall()
-    pedidos_com_itens = []
-    for pedido in pedidos:
+
+    lista = []
+    timers_json = []
+
+    for p in pedidos:
+        pedido = dict(p)
+
         cur.execute("""
-            SELECT pr.nome, i.quantidade, i.preco_unitario
-            FROM itens_pedido i
-            JOIN produtos pr ON pr.id = i.produto_id
-            WHERE i.pedido_id = ?
-        """, (pedido["id"],))
+            SELECT ip.*, pr.nome FROM itens_pedido ip
+            JOIN produtos pr ON ip.produto_id = pr.id
+            WHERE ip.pedido_id = ?
+        """, (p["id"],))
         itens = cur.fetchall()
-        pedidos_com_itens.append({
-            "id": pedido["id"],
-            "cliente": pedido["nome"],
-            "status": pedido["status"],
-            "data": pedido["data"],
-            "hora_saida": pedido["hora_saida"],
-            "hora_entrega": pedido["hora_entrega"],
-            "itens": itens
-        })
+
+        pedido["itens"] = [{
+            "produto_id": item["produto_id"],
+            "nome": item["nome"],
+            "quantidade": item["quantidade"],
+            "valor": item["preco_unitario"]
+        } for item in itens]
+
+        pedido["total"] = sum(item["valor"] * item["quantidade"] for item in pedido["itens"])
+
+        if pedido["status"] == "saiu":
+            timers_json.append({"id": pedido["id"], "hora_saida": pedido.get("hora_saida")})
+
+        lista.append(pedido)
 
     con.close()
-    return render_template("pedidos/listar_pedidos.html", pedidos=pedidos_com_itens, filtro_status=filtro_status)
+    return render_template("pedidos/listar_pedidos.html", pedidos=lista, timers_json=timers_json)
+
+# ALTERAR STATUS
+@bp_pedidos.route("/pedidos/status/<int:id>/<novo_status>")
+def alterar_status(id, novo_status):
+    if "usuario" not in session:
+        return redirect(url_for("usuarios.login"))
+
+    con = get_conexao()
+    cur = con.cursor()
+
+    # Atualiza status + hora_saida/hora_entrega se necessário
+    if novo_status == "saiu":
+        cur.execute("UPDATE pedidos SET status = ?, hora_saida = ? WHERE id = ?", (novo_status, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), id))
+    elif novo_status == "entregue":
+        cur.execute("UPDATE pedidos SET status = ?, hora_entrega = ? WHERE id = ?", (novo_status, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), id))
+    else:
+        cur.execute("UPDATE pedidos SET status = ? WHERE id = ?", (novo_status, id))
+    
+    cur.execute("SELECT * FROM pedidos WHERE id = ?", (id,))
+    pedido = cur.fetchone()
+
+    if pedido and novo_status in ["entregue", "pago"]:
+        cur.execute("""
+        SELECT quantidade, preco_unitario FROM itens_pedido WHERE pedido_id = ?""", (id,))
+    itens = cur.fetchall()
+
+    total = sum(i["quantidade"] * i["preco_unitario"] for i in itens)
+    descricao = f"Pedido #{id} - Mesa {pedido['mesa_id'] or 'N/A'}"
+    data = datetime.now().strftime("%Y-%m-%d")
+    tipo = "receita"  # <-- Aqui o ajuste!
+    forma_pagamento = "dinheiro"
+    cur.execute(
+        "INSERT INTO financeiro (descricao, valor, tipo, forma_pagamento, data) VALUES (?, ?, ?, ?, ?)",
+        (descricao, total, tipo, forma_pagamento, data)
+    )
+
+    con.commit()
+    con.close()
+
+    flash(f"Status do pedido #{id} alterado para {novo_status}.", "success")
+    return redirect(url_for("pedidos.listar_pedidos"))
+
+# EDITAR PEDIDO
+@bp_pedidos.route("/pedidos/editar/<int:id>", methods=["GET", "POST"])
+def editar(id):
+    if "usuario" not in session:
+        return redirect(url_for("usuarios.login"))
+
+    con = get_conexao()
+    cur = con.cursor()
+
+    cur.execute("SELECT * FROM pedidos WHERE id = ?", (id,))
+    pedido = cur.fetchone()
+    if not pedido:
+        flash("Pedido não encontrado!", "danger")
+        return redirect(url_for("pedidos.listar_pedidos"))
+
+    if request.method == "POST":
+        status = request.form.get("status")
+        mesa_id = request.form.get("mesa_id")
+        itens_json = request.form.get("itens_json")
+
+        try:
+            itens = json.loads(itens_json)
+        except:
+            flash("Erro ao processar os itens!", "danger")
+            return redirect(url_for("pedidos.editar", id=id))
+
+        cur.execute("UPDATE pedidos SET status = ?, mesa_id = ? WHERE id = ?", (status, mesa_id, id))
+        cur.execute("DELETE FROM itens_pedido WHERE pedido_id = ?", (id,))
+        for item in itens:
+            cur.execute(
+                "INSERT INTO itens_pedido (pedido_id, produto_id, quantidade, preco_unitario) VALUES (?, ?, ?, ?)",
+                (id, item["produto_id"], item["quantidade"], item["valor"])
+            )
+
+        con.commit()
+        con.close()
+
+        flash("Pedido atualizado com sucesso!", "success")
+        return redirect(url_for("pedidos.listar_pedidos"))
+
+    cur.execute("SELECT * FROM produtos ORDER BY nome")
+    produtos = cur.fetchall()
+
+    cur.execute("SELECT * FROM mesas ORDER BY nome")
+    mesas = cur.fetchall()
+
+    cur.execute("""
+        SELECT ip.*, pr.nome FROM itens_pedido ip
+        JOIN produtos pr ON ip.produto_id = pr.id
+        WHERE ip.pedido_id = ?
+    """, (id,))
+    itens_db = cur.fetchall()
+    itens = [{
+        "produto_id": i["produto_id"],
+        "nome": i["nome"],
+        "valor": i["preco_unitario"],
+        "quantidade": i["quantidade"]
+    } for i in itens_db]
+
+    con.close()
+    return render_template("pedidos/editar_pedido.html", pedido=pedido, produtos=produtos, itens=itens, mesas=mesas)
 
 # EXCLUIR PEDIDO
 @bp_pedidos.route("/pedidos/excluir/<int:id>")
@@ -119,84 +229,11 @@ def excluir_pedido(id):
 
     con = get_conexao()
     cur = con.cursor()
-    cur.execute("DELETE FROM itens_pedido WHERE pedido_id=?", (id,))
-    cur.execute("DELETE FROM pedidos WHERE id=?", (id,))
+
+    cur.execute("DELETE FROM itens_pedido WHERE pedido_id = ?", (id,))
+    cur.execute("DELETE FROM pedidos WHERE id = ?", (id,))
     con.commit()
     con.close()
 
-    flash("Pedido excluído com sucesso!", "pedido")
+    flash(f"Pedido #{id} excluído com sucesso.", "success")
     return redirect(url_for("pedidos.listar_pedidos"))
-
-# EDITAR PEDIDO
-@bp_pedidos.route("/pedidos/editar/<int:id>", methods=["GET", "POST"])
-def editar_pedido(id):
-    if "usuario" not in session:
-        return redirect(url_for("usuarios.login"))
-
-    con = get_conexao()
-    cur = con.cursor()
-
-    if request.method == "POST":
-        cliente_id = request.form.get("cliente_id")
-        status = request.form.get("status")
-        itens = request.form.get("itens")
-
-        # Definir cor baseada no status
-        cor = "amarelo" if status == "pendente" else "azul" if status == "saiu" else "verde"
-
-        hora_entrega = None
-        if status == "entregue":
-            from datetime import datetime
-            hora_entrega = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        if hora_entrega:
-            cur.execute("""
-                UPDATE pedidos SET cliente_id=?, status=?, itens=?, cor=?, hora_entrega=?
-                WHERE id=?
-            """, (cliente_id, status, itens, cor, hora_entrega, id))
-        else:
-            cur.execute("""
-                UPDATE pedidos SET cliente_id=?, status=?, itens=?, cor=?
-                WHERE id=?
-            """, (cliente_id, status, itens, cor, id))
-
-        con.commit()
-        con.close()
-        flash("Pedido atualizado com sucesso!", "pedido")
-        return redirect(url_for("pedidos.listar_pedidos"))
-
-    cur.execute("SELECT * FROM pedidos WHERE id=?", (id,))
-    pedido = cur.fetchone()
-    con.close()
-    return render_template("pedidos/editar_pedido.html", pedido=pedido)
-
-# ATUALIZAR STATUS (AJAX)
-@bp_pedidos.route("/pedidos/status/<int:id>", methods=["POST"])
-def atualizar_status(id):
-    if "usuario" not in session:
-        return redirect(url_for("usuarios.login"))
-
-    novo_status = request.form.get("status")
-    agora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    con = get_conexao()
-    cur = con.cursor()
-
-    # Verifica o status atual e horários
-    cur.execute("SELECT status, hora_saida, hora_entrega FROM pedidos WHERE id=?", (id,))
-    pedido = cur.fetchone()
-
-    if not pedido:
-        con.close()
-        return "Erro: Pedido não encontrado", 404
-
-    if novo_status == "saiu" and not pedido["hora_saida"]:
-        cur.execute("UPDATE pedidos SET status=?, hora_saida=? WHERE id=?", (novo_status, agora, id))
-    elif novo_status == "entregue" and not pedido["hora_entrega"]:
-        cur.execute("UPDATE pedidos SET status=?, hora_entrega=? WHERE id=?", (novo_status, agora, id))
-    else:
-        cur.execute("UPDATE pedidos SET status=? WHERE id=?", (novo_status, id))
-
-    con.commit()
-    con.close()
-    return "OK"

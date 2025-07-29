@@ -7,7 +7,7 @@ DB = "painel.db"
 
 def get_conexao():
     conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row  # ← permite usar cliente['nome'], etc.
+    conn.row_factory = sqlite3.Row
     return conn
 
 # LISTAGEM DE CLIENTES
@@ -29,21 +29,21 @@ def novo_cliente():
         return redirect(url_for("usuarios.login"))
 
     if request.method == "POST":
-        nome = request.form.get("nome")
-        telefone = request.form.get("telefone")
-        cpf = request.form.get("cpf")
-        rg = request.form.get("rg")
-        cep = request.form.get("cep")
-        endereco = request.form.get("endereco")
-        numero = request.form.get("numero")
-        bairro = request.form.get("bairro")
-        cidade = request.form.get("cidade")
-        estado = request.form.get("estado")
-        referencia = request.form.get("referencia")
-        outros = request.form.get("outros")
+        nome = request.form.get("nome_cliente")
+        telefone = request.form.get("telefone_cliente")
+        cpf = request.form.get("cpf_cliente")
+        rg = request.form.get("rg_cliente")
+        cep = request.form.get("cep_cliente")
+        endereco = request.form.get("endereco_cliente")
+        numero = request.form.get("numero_cliente")
+        bairro = request.form.get("bairro_cliente")
+        cidade = request.form.get("cidade_cliente")
+        estado = request.form.get("estado_cliente")
+        referencia = request.form.get("referencia_cliente")
+        outros = request.form.get("outros_cliente")
         data_cadastro = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        cliente = request.form.to_dict()  # para reaproveitar os dados no template
+        cliente = request.form.to_dict()
 
         if not endereco:
             flash("O campo Endereço é obrigatório!", "erro")
@@ -70,10 +70,10 @@ def novo_cliente():
         flash("Cliente cadastrado com sucesso!", "cliente")
         return redirect(url_for("clientes.listar_clientes"))
 
-    # cliente vazio se for GET
     cliente = {}
     return render_template("clientes/novo_cliente.html", cliente=cliente)
 
+# VERIFICAR CPF
 @bp_clientes.route("/clientes/verificar_cpf", methods=["POST"])
 def verificar_cpf():
     cpf = request.json.get("cpf")
@@ -109,22 +109,22 @@ def editar_cliente(id):
         return redirect(url_for("usuarios.login"))
 
     con = get_conexao()
-    con.row_factory = sqlite3.Row  # <-- ESSENCIAL
+    con.row_factory = sqlite3.Row
     cur = con.cursor()
 
     if request.method == "POST":
-        nome = request.form.get("nome")
-        telefone = request.form.get("telefone")
-        cpf = request.form.get("cpf")
-        rg = request.form.get("rg")
-        cep = request.form.get("cep")
-        endereco = request.form.get("endereco")
-        numero = request.form.get("numero")
-        bairro = request.form.get("bairro")
-        cidade = request.form.get("cidade")
-        estado = request.form.get("estado")
-        referencia = request.form.get("referencia")
-        outros = request.form.get("outros")
+        nome = request.form.get("nome_cliente")
+        telefone = request.form.get("telefone_cliente")
+        cpf = request.form.get("cpf_cliente")
+        rg = request.form.get("rg_cliente")
+        cep = request.form.get("cep_cliente")
+        endereco = request.form.get("endereco_cliente")
+        numero = request.form.get("numero_cliente")
+        bairro = request.form.get("bairro_cliente")
+        cidade = request.form.get("cidade_cliente")
+        estado = request.form.get("estado_cliente")
+        referencia = request.form.get("referencia_cliente")
+        outros = request.form.get("outros_cliente")
 
         if not endereco:
             flash("Endereço é obrigatório!", "erro")
@@ -146,6 +146,7 @@ def editar_cliente(id):
     con.close()
 
     return render_template("clientes/editar_cliente.html", cliente=cliente)
+
 # EXCLUIR CLIENTE
 @bp_clientes.route("/clientes/excluir/<int:id>")
 def excluir_cliente(id):
